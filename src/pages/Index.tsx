@@ -50,6 +50,8 @@ export default function Index() {
   const [showStars, setShowStars] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [showCatSpeech, setShowCatSpeech] = useState(false);
+  const [currentWishIndex, setCurrentWishIndex] = useState(0);
 
   useEffect(() => {
     if (showIntro) {
@@ -103,6 +105,29 @@ export default function Index() {
     }
   };
 
+  const speakWishes = (wishList: string[]) => {
+    const cleanedWishes = wishList.map(w => {
+      return w.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+    });
+    
+    const intro = 'Саша! Я желаю тебе...';
+    speak(intro);
+    
+    setTimeout(() => {
+      cleanedWishes.forEach((wish, index) => {
+        setTimeout(() => {
+          setCurrentWishIndex(index + 1);
+          speak(wish);
+        }, index * 3000);
+      });
+      
+      setTimeout(() => {
+        setCurrentWishIndex(999);
+        speak('Пусть всё это обязательно сбудется! С днём рождения!');
+      }, cleanedWishes.length * 3000);
+    }, 2000);
+  };
+
   const startGame = () => {
     setShowIntro(false);
     setCatMessage('Выбери своё первое пожелание! 🎁');
@@ -123,9 +148,12 @@ export default function Index() {
       speak(`Отличный выбор! Теперь выбери пожелание ${nextStep}`);
     } else {
       setCatMessage('Ура! Все пожелания выбраны! 🎊');
-      speak('Ура! Все пожелания выбраны!');
       setConfetti(true);
       playMelody();
+      setTimeout(() => {
+        setShowCatSpeech(true);
+        speakWishes(newWishes);
+      }, 2000);
     }
   };
 
@@ -213,30 +241,71 @@ export default function Index() {
         <Card className="max-w-3xl w-full p-8 bg-white/95 backdrop-blur shadow-2xl relative z-10 animate-float">
           <div className="text-center space-y-6">
             <div className="text-9xl animate-wiggle">🐱💖</div>
-            <h2 className="text-4xl font-bold text-purple-600 animate-rainbow">
-              Твои волшебные пожелания:
-            </h2>
-            <div className="space-y-4">
-              {selectedWishes.map((wish, index) => (
-                <div 
-                  key={index}
-                  className="bg-gradient-to-r from-pink-100 to-purple-100 p-4 rounded-xl shadow-md transform hover:scale-105 transition-all animate-float"
-                  style={{ animationDelay: `${index * 0.2}s` }}
-                >
-                  <p className="text-2xl font-semibold text-gray-800">
-                    {index + 1}. {wish}
+            
+            {showCatSpeech ? (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-purple-300 to-pink-300 p-6 rounded-3xl animate-pulse border-4 border-purple-500">
+                  <p className="text-3xl font-bold text-gray-800 mb-4">
+                    Саша! Я желаю тебе...
                   </p>
                 </div>
-              ))}
-            </div>
-            <div className="bg-gradient-to-r from-yellow-200 to-pink-200 p-6 rounded-2xl mt-8 animate-pulse">
-              <p className="text-2xl text-gray-800 font-bold">
-                🎉 Пусть всё это сбудется! 🎉
-              </p>
-              <p className="text-xl text-gray-700 mt-2">
-                Самый лучший день рождения у самой лучшей Саши! 💖
-              </p>
-            </div>
+                
+                <div className="space-y-4">
+                  {selectedWishes.map((wish, index) => (
+                    <div 
+                      key={index}
+                      className={`bg-gradient-to-r from-pink-100 to-purple-100 p-4 rounded-xl shadow-md transform transition-all duration-500 ${
+                        index < currentWishIndex ? 'scale-105 border-4 border-green-500' : 'scale-95 opacity-50'
+                      } animate-float`}
+                      style={{ animationDelay: `${index * 0.2}s` }}
+                    >
+                      <p className="text-2xl font-semibold text-gray-800">
+                        {index + 1}. {wish}
+                      </p>
+                      {index < currentWishIndex && (
+                        <div className="text-4xl mt-2 animate-bounce">✅</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {currentWishIndex > selectedWishes.length && (
+                  <div className="bg-gradient-to-r from-yellow-200 to-pink-200 p-6 rounded-2xl mt-8 animate-pulse border-4 border-yellow-500">
+                    <p className="text-3xl text-gray-800 font-bold">
+                      🎉 Пусть всё это обязательно сбудется! 🎉
+                    </p>
+                    <p className="text-2xl text-gray-700 mt-2">
+                      С днём рождения, Саша! 💖
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <h2 className="text-4xl font-bold text-purple-600 animate-rainbow">
+                  Твои волшебные пожелания:
+                </h2>
+                <div className="space-y-4">
+                  {selectedWishes.map((wish, index) => (
+                    <div 
+                      key={index}
+                      className="bg-gradient-to-r from-pink-100 to-purple-100 p-4 rounded-xl shadow-md transform hover:scale-105 transition-all animate-float"
+                      style={{ animationDelay: `${index * 0.2}s` }}
+                    >
+                      <p className="text-2xl font-semibold text-gray-800">
+                        {index + 1}. {wish}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gradient-to-r from-yellow-200 to-pink-200 p-6 rounded-2xl mt-8 animate-pulse">
+                  <p className="text-2xl text-gray-800 font-bold">
+                    🎉 Котик готовится произнести волшебные слова... 🎉
+                  </p>
+                </div>
+              </>
+            )}
+            
             <Button
               onClick={toggleMusic}
               size="lg"
